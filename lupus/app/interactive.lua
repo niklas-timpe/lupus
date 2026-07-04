@@ -381,9 +381,9 @@ function Interactive:build_ui()
         if ev.type == "key" and ev.name == "escape" then
           self:close_overlay()
           ch:send({})
-          return
+          return true
         end
-        editor:handle_input(ev)
+        return editor:handle_input(ev)
       end,
     }
     self:open_overlay(wrapper)

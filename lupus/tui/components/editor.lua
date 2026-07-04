@@ -329,13 +329,15 @@ function Editor:submit()
   if self.on_submit then self.on_submit(content) end
 end
 
+--- Returns true when the event was consumed; unknown keys fall through to
+--- the TUI's viewport defaults.
 function Editor:handle_input(ev, width)
   width = width or self.last_width or 78
   if ev.type == "paste" then
     self:insert(ev.text)
-    return
+    return true
   end
-  if ev.type ~= "key" then return end
+  if ev.type ~= "key" then return false end
   local name = ev.name
   local cur = self.cursor
 
@@ -379,7 +381,10 @@ function Editor:handle_input(ev, width)
     self:kill_to_start()
   elseif name == "ctrl+k" then
     self:kill_to_end()
+  else
+    return false
   end
+  return true
 end
 
 -- ---------------------------------------------------------------------------

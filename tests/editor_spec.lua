@@ -13,6 +13,16 @@ local function type_text(ed, s)
 end
 
 describe("tui editor", function()
+  it("consumes keys it handles, passes on the rest", function()
+    local ed = Editor.new()
+    assert.is_true(ed:handle_input(key("a", "a"), 40))
+    assert.is_true(ed:handle_input(key("backspace"), 40))
+    assert.is_true(ed:handle_input({ type = "paste", text = "x" }, 40))
+    assert.is_false(ed:handle_input(key("pageup"), 40))
+    assert.is_false(ed:handle_input(key("escape"), 40))
+    assert.is_false(ed:handle_input({ type = "mouse", name = "wheelup" }, 40))
+  end)
+
   it("inserts typed characters", function()
     local ed = Editor.new()
     type_text(ed, "hello")

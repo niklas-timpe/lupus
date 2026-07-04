@@ -81,7 +81,7 @@ describe("tui renderer", function()
     assert.equals("line 6", vis[#vis])
   end)
 
-  it("scrolls with pageup even while a component has focus", function()
+  it("scrolls on keys the focused component leaves unconsumed", function()
     local t, s = make_tui(40, 4)
     for i = 1, 6 do
       t:add(Text.new("line " .. i))
@@ -93,7 +93,21 @@ describe("tui renderer", function()
     t:dispatch(key("pageup"))
     t:render_frame()
     assert.equals("line 1", s:visible()[1])
-    assert.same({}, seen) -- the focused component never saw the key
+    assert.same({ "pageup" }, seen) -- offered to the component first
+  end)
+
+  it("does not scroll on keys the focused component consumes", function()
+    local t, s = make_tui(40, 4)
+    for i = 1, 6 do
+      t:add(Text.new("line " .. i))
+    end
+    t:set_focus({ handle_input = function() return true end })
+    t:render_frame()
+
+    t:dispatch(key("pageup"))
+    t:render_frame()
+    local vis = s:visible()
+    assert.equals("line 6", vis[#vis])
   end)
 
   it("scrolls with the mouse wheel", function()
@@ -101,7 +115,7 @@ describe("tui renderer", function()
     for i = 1, 6 do
       t:add(Text.new("line " .. i))
     end
-    t:set_focus({ handle_input = function() end })
+    t:set_focus({ handle_input = function() return false end })
     t:render_frame()
 
     t:dispatch({ type = "mouse", name = "wheelup" })
@@ -114,12 +128,12 @@ describe("tui renderer", function()
     assert.equals("line 6", vis[#vis])
   end)
 
-  it("snaps back to the bottom when the focused component gets input", function()
+  it("snaps back to the bottom when the focused component consumes input", function()
     local t, s = make_tui(40, 4)
     for i = 1, 6 do
       t:add(Text.new("line " .. i))
     end
-    t:set_focus({ handle_input = function() end })
+    t:set_focus({ handle_input = function(_, ev) return ev.name == "a" end })
     t:render_frame()
 
     t:dispatch(key("pageup"))

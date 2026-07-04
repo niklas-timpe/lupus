@@ -1,17 +1,19 @@
 -- The TUI: a component tree rendered full-screen through a surface (the
 -- ncurses screen in production, a fake grid in tests).
 --
--- Component contract (unchanged from the string renderer days):
+-- Component contract:
 --   component:render(width) -> array of ANSI-styled lines, ≤ width columns
---   component.handle_input(ev) (optional)  -- receives events when focused
+--   component:handle_input(ev) -> consumed (optional)
+--     receives events when focused; return true to consume the event,
+--     anything else lets it fall through to the viewport defaults
 --   component.focused (optional)           -- set by tui:set_focus
 --
 -- Each frame the tree is flattened into one array of styled lines; the
 -- bottom-anchored tail that fits the screen is parsed into style runs
 -- (lupus/tui/sgr.lua) and drawn onto the surface. ncurses diffs the frame
 -- against the physical screen, so redrawing everything each frame is cheap.
--- pageup/pagedown and the mouse wheel scroll the view; input that reaches
--- the focused component snaps the view back to the bottom.
+-- Input the focused component consumes snaps the view to the bottom; what
+-- it leaves falls through to the viewport (pageup/pagedown, wheel scroll).
 --
 -- The layers, individually replaceable:
 --   components  -> styled strings   (lupus/tui/components/*, text.lua)
@@ -127,26 +129,30 @@ function TUI:dispatch(ev)
       return
     end
   end
-  -- Scroll input is claimed here, before the focused component: the editor
-  -- always has focus, so it would otherwise shadow scrolling entirely.
+  if self.focus and self.focus.handle_input then
+    local ok, consumed = pcall(self.focus.handle_input, self.focus, ev)
+    if not ok then
+      log.error("component input failed: %s", tostring(consumed))
+    elseif consumed then
+      self.scroll = 0 -- typing while scrolled up snaps back to the editor
+      self:request_render()
+      return
+    end
+  end
+  -- Viewport defaults: whatever the focused component leaves unconsumed.
   if ev.type == "mouse" then
     if ev.name == "wheelup" then
       self:scroll_by(WHEEL_LINES)
     elseif ev.name == "wheeldown" then
       self:scroll_by(-WHEEL_LINES)
     end
-    return
-  end
-  if ev.type == "key" and (ev.name == "pageup" or ev.name == "pagedown") then
+  elseif ev.type == "key" then
     local page = self.height > 2 and self.height - 2 or 1
-    self:scroll_by(ev.name == "pageup" and page or -page)
-    return
-  end
-  if self.focus and self.focus.handle_input then
-    self.scroll = 0 -- typing while scrolled up snaps back to the editor
-    local ok, err = pcall(self.focus.handle_input, self.focus, ev)
-    if not ok then log.error("component input failed: %s", tostring(err)) end
-    self:request_render()
+    if ev.name == "pageup" then
+      self:scroll_by(page)
+    elseif ev.name == "pagedown" then
+      self:scroll_by(-page)
+    end
   end
 end
 

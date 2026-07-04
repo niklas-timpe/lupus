@@ -42,8 +42,10 @@ function Select:visible_items()
   return out
 end
 
+--- Returns true when the event was consumed; unknown keys fall through to
+--- the TUI's viewport defaults.
 function Select:handle_input(ev)
-  if ev.type ~= "key" then return end
+  if ev.type ~= "key" then return false end
   local items = self:visible_items()
   if ev.name == "up" or ev.name == "ctrl+p" then
     self.selected = self.selected > 1 and self.selected - 1 or #items
@@ -63,7 +65,10 @@ function Select:handle_input(ev)
   elseif self.filterable and ev.char then
     self.filter = self.filter .. ev.char
     self.selected = 1
+  else
+    return false
   end
+  return true
 end
 
 function Select:render(width)
