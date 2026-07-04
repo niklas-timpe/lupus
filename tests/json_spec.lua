@@ -1,0 +1,30 @@
+local json = require("lupus.util.json")
+
+describe("util.json", function()
+  it("round-trips basic values", function()
+    local v = json.decode_or_error('{"a":1,"b":[1,2,3],"c":"x"}')
+    assert.equals(1, v.a)
+    assert.same({ 1, 2, 3 }, v.b)
+  end)
+
+  it("encodes empty arrays as [] when tagged", function()
+    assert.equals("[]", json.encode(json.array({})))
+    assert.equals("{}", json.encode({}))
+  end)
+
+  it("preserves null as a distinguishable sentinel", function()
+    local v = json.decode_or_error('{"a":null}')
+    assert.is_true(json.is_null(v.a))
+    assert.is_false(json.is_null(nil))
+  end)
+
+  it("returns nil, err on malformed input", function()
+    local v, err = json.decode("{nope")
+    assert.is_nil(v)
+    assert.is_string(err)
+  end)
+
+  it("encodes Lua integers without decimal point", function()
+    assert.equals('{"n":5}', json.encode({ n = 5 }))
+  end)
+end)

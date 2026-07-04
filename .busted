@@ -1,0 +1,9 @@
+return {
+  default = {
+    verbose = true,
+    ROOT = { "tests" },
+    pattern = "_spec",
+    lpath = "./?.lua;./?/init.lua",
+    helper = "./tests/helpers/busted_helper.lua",
+  },
+}
