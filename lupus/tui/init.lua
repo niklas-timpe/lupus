@@ -10,7 +10,8 @@
 -- bottom-anchored tail that fits the screen is parsed into style runs
 -- (lupus/tui/sgr.lua) and drawn onto the surface. ncurses diffs the frame
 -- against the physical screen, so redrawing everything each frame is cheap.
--- pageup/pagedown scroll the view when nothing else claims the keys.
+-- pageup/pagedown and the mouse wheel scroll the view; input that reaches
+-- the focused component snaps the view back to the bottom.
 --
 -- The layers, individually replaceable:
 --   components  -> styled strings   (lupus/tui/components/*, text.lua)
@@ -34,6 +35,13 @@ local FRAME_MS = 16
 
 local PASTE_ON = "\27[?2004h"
 local PASTE_OFF = "\27[?2004l"
+
+-- Button presses + SGR encoding: enough for wheel events, which is all the
+-- input parser turns into events.
+local MOUSE_ON = "\27[?1000;1006h"
+local MOUSE_OFF = "\27[?1000;1006l"
+
+local WHEEL_LINES = 3
 
 --- opts.surface: a screen-like surface (defaults to the real ncurses
 --- screen). opts.input_reader: a loop reader yielding key bytes (defaults
@@ -119,19 +127,26 @@ function TUI:dispatch(ev)
       return
     end
   end
+  -- Scroll input is claimed here, before the focused component: the editor
+  -- always has focus, so it would otherwise shadow scrolling entirely.
+  if ev.type == "mouse" then
+    if ev.name == "wheelup" then
+      self:scroll_by(WHEEL_LINES)
+    elseif ev.name == "wheeldown" then
+      self:scroll_by(-WHEEL_LINES)
+    end
+    return
+  end
+  if ev.type == "key" and (ev.name == "pageup" or ev.name == "pagedown") then
+    local page = self.height > 2 and self.height - 2 or 1
+    self:scroll_by(ev.name == "pageup" and page or -page)
+    return
+  end
   if self.focus and self.focus.handle_input then
+    self.scroll = 0 -- typing while scrolled up snaps back to the editor
     local ok, err = pcall(self.focus.handle_input, self.focus, ev)
     if not ok then log.error("component input failed: %s", tostring(err)) end
     self:request_render()
-    return
-  end
-  if ev.type == "key" then
-    local page = self.height > 2 and self.height - 2 or 1
-    if ev.name == "pageup" then
-      self:scroll_by(page)
-    elseif ev.name == "pagedown" then
-      self:scroll_by(-page)
-    end
   end
 end
 
@@ -218,7 +233,7 @@ function TUI:start(opts)
   if not opts.headless then
     if self.surface.start then
       self.surface:start()
-      self.surface:write_raw(PASTE_ON)
+      self.surface:write_raw(PASTE_ON .. MOUSE_ON)
     end
     self.resize_unsub = loop.on_signal("SIGWINCH", function()
       if self.surface.resize then self.surface:resize() end
@@ -250,7 +265,7 @@ function TUI:stop()
     self.tty_in = nil
   end
   if self.surface.stop then
-    self.surface:write_raw(PASTE_OFF)
+    self.surface:write_raw(MOUSE_OFF .. PASTE_OFF)
     self.surface:stop()
   end
 end

@@ -90,6 +90,24 @@ describe("tui.input", function()
     assert.equals(bytes:sub(1, 2), rest)
   end)
 
+  it("parses SGR mouse wheel reports", function()
+    local events = input.parse("\27[<64;10;5M\27[<65;10;5M")
+    assert.same({ "wheelup", "wheeldown" }, names(events))
+    assert.equals("mouse", events[1].type)
+    assert.equals(10, events[1].x)
+    assert.equals(5, events[1].y)
+  end)
+
+  it("parses wheel reports with modifier bits", function()
+    local events = input.parse("\27[<68;1;1M") -- shift+wheelup
+    assert.same({ "wheelup" }, names(events))
+  end)
+
+  it("swallows mouse clicks, releases, and drags", function()
+    local events = input.parse("\27[<0;3;4M\27[<0;3;4m\27[<32;3;5Ma")
+    assert.same({ "a" }, names(events))
+  end)
+
   it("swallows OSC terminal responses", function()
     local events = input.parse("\27]11;rgb:1111/2222/3333\7a")
     assert.same({ "a" }, names(events))

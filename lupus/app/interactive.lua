@@ -2,7 +2,8 @@
 -- fixed editor at the bottom. Assistant text renders as markdown, tool
 -- calls as compact cards, thinking as dim collapsed text.
 --
--- Keys: enter send · alt+enter newline · esc abort a run · ctrl+c twice quit.
+-- Keys: enter send · alt+enter newline · esc abort a run · ctrl+c twice
+-- quit · pageup/pagedown or mouse wheel scroll the transcript.
 
 local loop = require("lupus.loop")
 local tui_mod = require("lupus.tui")

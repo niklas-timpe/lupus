@@ -62,7 +62,8 @@ export ANTHROPIC_API_KEY=sk-ant-…   # or OPENAI_API_KEY / OPENROUTER_API_KEY /
 ```
 
 Keys: `enter` send · `alt+enter` newline · `esc` interrupt the agent ·
-`ctrl+c` twice quit · `up`/`down` prompt history.
+`ctrl+c` twice quit · `up`/`down` prompt history · `pageup`/`pagedown` or
+mouse wheel scroll the transcript.
 
 Slash commands: `/help` `/login` `/model` `/thinking` `/new` `/name` `/cost`
 `/clear` `/quit` — plus whatever extensions and prompt templates add.

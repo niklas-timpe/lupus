@@ -4,6 +4,8 @@
 -- Events:
 --   { type = "key", name = "ctrl+c" | "up" | "enter" | "a" | ..., char = "a"|nil }
 --   { type = "paste", text = "..." }              (bracketed paste)
+--   { type = "mouse", name = "wheelup"|"wheeldown", x = col, y = row }
+--     (SGR mouse reports; clicks and drags are swallowed)
 --
 -- Key names are canonical: modifiers in ctrl+alt+shift order, then the key.
 -- `char` is set only for plain printable input (what an editor inserts).
@@ -58,9 +60,23 @@ local function key_event(name, char)
   return { type = "key", name = name, char = char }
 end
 
+--- SGR mouse report body: "<b;x;yM" (press/wheel) or "<b;x;ym" (release).
+--- Bit 64 in b marks wheel events; the low bits pick the direction.
+local function parse_mouse(body)
+  local b, x, y, kind = body:match("^<(%d+);(%d+);(%d+)([Mm])$")
+  if not b then return nil end
+  b = tonumber(b)
+  if kind == "M" and band(b, 64) ~= 0 and band(b, 3) <= 1 then
+    local name = band(b, 3) == 0 and "wheelup" or "wheeldown"
+    return { type = "mouse", name = name, x = tonumber(x), y = tonumber(y) }
+  end
+  return nil -- clicks, drags, wheel-tilt: not our concern
+end
+
 --- Parse one CSI sequence body (bytes between "ESC[" and including the
 --- final byte). Returns an event or nil for sequences we ignore.
 local function parse_csi(body)
+  if body:sub(1, 1) == "<" then return parse_mouse(body) end
   local final = body:sub(-1)
   local params = body:sub(1, -2)
   if final == "~" then
