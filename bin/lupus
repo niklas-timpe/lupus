@@ -1,0 +1,38 @@
+#!/usr/bin/env luajit
+-- Lupus entry point. Requires the `luajit` interpreter on PATH.
+-- Resolves its own location so a plain checkout works without installation,
+-- then defers to lupus.cli.
+
+if not rawget(_G, "jit") then
+  io.stderr:write("lupus: requires LuaJIT, but this interpreter is " .. _VERSION .. "\n")
+  os.exit(1)
+end
+
+local function script_dir()
+  local src = debug.getinfo(1, "S").source:sub(2)
+  -- Resolve symlinks so `ln -s .../bin/lupus /usr/local/bin/lupus` works.
+  local p = io.popen(("cd '%s' 2>/dev/null && pwd -P"):format(src:match("^(.*)/") or "."))
+  local dir = p and p:read("*l")
+  if p then p:close() end
+  return dir or "."
+end
+
+local root = script_dir():gsub("/bin$", "")
+package.path = table.concat({
+  root .. "/?.lua",
+  root .. "/?/init.lua",
+  package.path,
+}, ";")
+
+-- Pick up rocks installed in the user tree (lua-cjson).
+local home = os.getenv("HOME")
+if home then
+  package.path = package.path
+    .. (";%s/.luarocks/share/lua/5.1/?.lua;%s/.luarocks/share/lua/5.1/?/init.lua"):format(home, home)
+  package.cpath = package.cpath
+    .. (";%s/.luarocks/lib/lua/5.1/?.so"):format(home)
+end
+
+require("lupus.util.compat")
+
+os.exit(require("lupus.cli").main(arg))
