@@ -1,0 +1,4 @@
+*.rock
+luacov.*.out
+.luarocks/
+lupus.log
