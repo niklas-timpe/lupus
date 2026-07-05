@@ -8,7 +8,7 @@
 --   ch:close()                      -- recv drains the buffer, then "closed"
 --   for v in ch:iter() do ... end
 
-local loop = require("lupus.loop")
+local loop = require("lupus.loop.core")
 
 local channel = {}
 

@@ -45,6 +45,7 @@ build = {
     ["lupus.ext.events"] = "lupus/ext/events.lua",
     ["lupus.ext.loader"] = "lupus/ext/loader.lua",
     ["lupus.loop.channel"] = "lupus/loop/channel.lua",
+    ["lupus.loop.core"] = "lupus/loop/core.lua",
     ["lupus.loop"] = "lupus/loop/init.lua",
     ["lupus.loop.process"] = "lupus/loop/process.lua",
     ["lupus.prompt"] = "lupus/prompt.lua",

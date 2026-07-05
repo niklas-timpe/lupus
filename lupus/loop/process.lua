@@ -15,7 +15,7 @@
 -- own process group so kill/terminate reach grandchildren too.
 
 local uv = require("luv")
-local loop = require("lupus.loop")
+local loop = require("lupus.loop.core")
 local log = require("lupus.util.log")
 
 local process = {}
