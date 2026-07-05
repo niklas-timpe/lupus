@@ -7,7 +7,7 @@
 --   model_changed { model }
 --   session_named { name }
 --
--- Extensions (M7) hook in here too, so every frontend gets them for free.
+-- Extensions hook in here too, so every frontend gets them for free.
 
 local agent_mod = require("lupus.agent")
 local models = require("lupus.ai.models")
