@@ -46,6 +46,24 @@ ordinary Lua files.
 luarocks --lua-version 5.1 install lua-cjson
 ```
 
+## Installing
+
+You can run lupus straight out of a checkout — `./bin/lupus` resolves its own
+modules relative to itself, no install needed. To put `lupus` on your `PATH`
+instead:
+
+```sh
+make                    # → ~/.local/bin/lupus + ~/.local/lupus/
+make PREFIX=/usr/local  # install elsewhere
+make uninstall          # remove it again
+make reinstall          # uninstall + install
+```
+
+`make install` (the default target) overwrites whatever is already at the
+destination and asks for confirmation first; pass `FORCE=1` to skip the
+prompt (e.g. scripted or packaging installs). Requires GNU Make. See the
+`Makefile` for the full list of variables (`DESTDIR`, `BIN`, `LIB`).
+
 ## Quickstart
 
 ```sh
