@@ -3,7 +3,7 @@
 local loop = require("lupus.loop")
 local text = require("lupus.tui.text")
 
-local FRAMES = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+local FRAMES = { "◰", "◳", "◲", "◱" }
 
 local Loader = {}
 Loader.__index = Loader
@@ -29,7 +29,7 @@ function Loader:start()
 		return
 	end
 	self.started_at = loop.now_ms()
-	self.timer = loop.interval(80, function()
+	self.timer = loop.interval(140, function()
 		self.frame = self.frame % #FRAMES + 1
 		self.tui:request_render()
 	end)
@@ -47,7 +47,7 @@ function Loader:render(width)
 		return {}
 	end
 	local secs = math.floor((loop.now_ms() - self.started_at) / 1000)
-	local line = text.style.cyan(FRAMES[self.frame])
+	local line = text.style.yellow(FRAMES[self.frame])
 		.. " "
 		.. self.message
 		.. text.style.gray((" (%ds%s)"):format(secs, self.hint and (" · " .. self.hint) or ""))
