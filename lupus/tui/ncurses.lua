@@ -6,7 +6,7 @@
 local ffi = require("ffi")
 local bit = require("bit")
 
-ffi.cdef[[
+ffi.cdef([[
 typedef struct _win_st WINDOW;
 typedef unsigned int chtype;
 
@@ -38,60 +38,60 @@ int getmaxx(WINDOW *win);
 int getmaxy(WINDOW *win);
 
 char *setlocale(int category, const char *locale);
-]]
+]])
 
 --- Candidate libraries, most specific first: the homebrew wide build (keg-
 --- only, never on the default search path), then whatever the dynamic
 --- linker can find. On macOS the plain "ncurses" fallback is the ancient
 --- system 5.7, which still supports everything this file declares.
 local candidates = {
-  "/usr/local/opt/ncurses/lib/libncursesw.dylib",
-  "/opt/homebrew/opt/ncurses/lib/libncursesw.dylib",
-  "ncursesw",
-  "ncurses",
+	"/usr/local/opt/ncurses/lib/libncursesw.dylib",
+	"/opt/homebrew/opt/ncurses/lib/libncursesw.dylib",
+	"ncursesw",
+	"ncurses",
 }
 
 local lib, lib_path
 for _, name in ipairs(candidates) do
-  local ok, loaded = pcall(ffi.load, name)
-  if ok then
-    lib, lib_path = loaded, name
-    break
-  end
+	local ok, loaded = pcall(ffi.load, name)
+	if ok then
+		lib, lib_path = loaded, name
+		break
+	end
 end
 assert(lib, "lupus: could not load ncurses (tried " .. table.concat(candidates, ", ") .. ")")
 
 local nc = {
-  C = lib,          -- raw library handle: nc.C.initscr(), ...
-  path = lib_path,
+	C = lib, -- raw library handle: nc.C.initscr(), ...
+	path = lib_path,
 }
 
 --- setlocale(LC_ALL, "") so ncursesw interprets output as UTF-8. LC_ALL is
 --- 0 on BSD/macOS libc, 6 on glibc.
 function nc.init_locale()
-  local LC_ALL = (ffi.os == "OSX" or ffi.os == "BSD") and 0 or 6
-  ffi.C.setlocale(LC_ALL, "")
+	local LC_ALL = (ffi.os == "OSX" or ffi.os == "BSD") and 0 or 6
+	ffi.C.setlocale(LC_ALL, "")
 end
 
 -- Attribute bits, ncurses ABI: NCURSES_BITS(mask, shift) = mask << (shift + 8).
 local function bits(mask, shift)
-  return bit.lshift(mask, shift + 8)
+	return bit.lshift(mask, shift + 8)
 end
 
 nc.A = {
-  NORMAL = 0,
-  STANDOUT = bits(1, 8),
-  UNDERLINE = bits(1, 9),
-  REVERSE = bits(1, 10),
-  BLINK = bits(1, 11),
-  DIM = bits(1, 12),
-  BOLD = bits(1, 13),
-  ITALIC = bits(1, 23),
+	NORMAL = 0,
+	STANDOUT = bits(1, 8),
+	UNDERLINE = bits(1, 9),
+	REVERSE = bits(1, 10),
+	BLINK = bits(1, 11),
+	DIM = bits(1, 12),
+	BOLD = bits(1, 13),
+	ITALIC = bits(1, 23),
 }
 
 --- The attribute selecting color pair n (COLOR_PAIR(n)).
 function nc.color_pair(n)
-  return bits(n, 0)
+	return bits(n, 0)
 end
 
 return nc

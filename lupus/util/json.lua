@@ -13,34 +13,40 @@ local json = {}
 json.null = cjson.null
 
 local array_mt = { __name = "json.array" }
-if cjson.array_mt then array_mt = cjson.array_mt end
+if cjson.array_mt then
+	array_mt = cjson.array_mt
+end
 
 --- Tag a table so it encodes as a JSON array even when empty.
 function json.array(t)
-  return setmetatable(t or {}, array_mt)
+	return setmetatable(t or {}, array_mt)
 end
 
 function json.is_null(v)
-  return v == cjson.null
+	return v == cjson.null
 end
 
 --- Encode a Lua value to a JSON string. Errors on unencodable input.
 function json.encode(value)
-  local s, err = cjson.encode(value)
-  if not s then error("json encode failed: " .. tostring(err), 2) end
-  return s
+	local s, err = cjson.encode(value)
+	if not s then
+		error("json encode failed: " .. tostring(err), 2)
+	end
+	return s
 end
 
 --- Decode JSON. Returns value, or nil + error message.
 function json.decode(s)
-  return cjson.decode(s)
+	return cjson.decode(s)
 end
 
 --- Decode JSON, raising on failure (for internal data we produced ourselves).
 function json.decode_or_error(s)
-  local v, err = cjson.decode(s)
-  if v == nil and err then error("json decode failed: " .. tostring(err), 2) end
-  return v
+	local v, err = cjson.decode(s)
+	if v == nil and err then
+		error("json decode failed: " .. tostring(err), 2)
+	end
+	return v
 end
 
 return json

@@ -3,13 +3,13 @@
 -- here. Require this before anything that uses table.pack/table.unpack.
 
 if not table.pack then
-  function table.pack(...)
-    return { n = select("#", ...), ... }
-  end
+	function table.pack(...)
+		return { n = select("#", ...), ... }
+	end
 end
 
 if not table.unpack then
-  table.unpack = unpack
+	table.unpack = unpack
 end
 
 return true

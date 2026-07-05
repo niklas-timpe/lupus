@@ -9,53 +9,57 @@ local Surface = {}
 Surface.__index = Surface
 
 function M.new(cols, rows)
-  return setmetatable({
-    cols = cols,
-    rows = rows,
-    grid = {},
-    puts = {},   -- log of { y, x, text, style } for style assertions
-    frames = 0,
-    invalidated = 0,
-  }, Surface)
+	return setmetatable({
+		cols = cols,
+		rows = rows,
+		grid = {},
+		puts = {}, -- log of { y, x, text, style } for style assertions
+		frames = 0,
+		invalidated = 0,
+	}, Surface)
 end
 
 function Surface:size()
-  return self.cols, self.rows
+	return self.cols, self.rows
 end
 
 function Surface:begin_frame()
-  self.grid = {}
-  self.puts = {}
+	self.grid = {}
+	self.puts = {}
 end
 
 function Surface:put(y, x, str, style)
-  self.puts[#self.puts + 1] = { y = y, x = x, text = str, style = style }
-  local row = self.grid[y] or ""
-  if #row < x - 1 then row = row .. (" "):rep(x - 1 - #row) end
-  self.grid[y] = row .. str
+	self.puts[#self.puts + 1] = { y = y, x = x, text = str, style = style }
+	local row = self.grid[y] or ""
+	if #row < x - 1 then
+		row = row .. (" "):rep(x - 1 - #row)
+	end
+	self.grid[y] = row .. str
 end
 
 function Surface:end_frame()
-  self.frames = self.frames + 1
+	self.frames = self.frames + 1
 end
 
 function Surface:invalidate()
-  self.invalidated = self.invalidated + 1
+	self.invalidated = self.invalidated + 1
 end
 
 --- Row y as a string ("" when empty).
 function Surface:row(y)
-  return self.grid[y] or ""
+	return self.grid[y] or ""
 end
 
 --- Non-empty rows in order (for content assertions).
 function Surface:visible()
-  local out = {}
-  for y = 1, self.rows do
-    local row = self.grid[y]
-    if row and row ~= "" then out[#out + 1] = row end
-  end
-  return out
+	local out = {}
+	for y = 1, self.rows do
+		local row = self.grid[y]
+		if row and row ~= "" then
+			out[#out + 1] = row
+		end
+	end
+	return out
 end
 
 return M
