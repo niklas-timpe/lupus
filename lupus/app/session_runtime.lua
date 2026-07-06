@@ -180,7 +180,11 @@ end
 
 --- Send user input: starts a run when idle, steers when busy. Extensions
 --- get a shot first (user_input transform); on a fresh run they can extend
---- the system prompt and inject context (before_agent_start).
+--- the system prompt, inject context, and hide tools from the model's tool
+--- list for the run (before_agent_start: { system_prompt_append?,
+--- inject_message?, hidden_tools? = {name, ...} }). Recomputed every fresh
+--- run, so a hide/append lasts only as long as the condition that produced
+--- it holds true.
 function Runtime:send(text)
 	local transformed, handled = self.hub:transform("user_input", text, {
 		running = self.agent.is_running,
@@ -197,6 +201,7 @@ function Runtime:send(text)
 
 	local contributions = self.hub:collect("before_agent_start", {})
 	local appends = {}
+	local hidden_tools = nil
 	for _, c in ipairs(contributions) do
 		if c.system_prompt_append then
 			appends[#appends + 1] = c.system_prompt_append
@@ -206,11 +211,18 @@ function Runtime:send(text)
 			self.agent.messages[#self.agent.messages + 1] = injected
 			self.session:append_message(injected)
 		end
+		if c.hidden_tools then
+			hidden_tools = hidden_tools or {}
+			for _, name in ipairs(c.hidden_tools) do
+				hidden_tools[name] = true
+			end
+		end
 	end
 	self.agent.system_prompt = self.system_prompt
 	if #appends > 0 then
 		self.agent.system_prompt = self.system_prompt .. "\n\n" .. table.concat(appends, "\n\n")
 	end
+	self.agent.hidden_tools = hidden_tools
 
 	self.agent:prompt(text)
 	return "started"

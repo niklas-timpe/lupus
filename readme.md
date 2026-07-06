@@ -167,13 +167,18 @@ end
 | notify | `session_start` `session_shutdown` `agent_start` `agent_end` `turn_start` `turn_end` `message_start` `message_update` `message_end` `tool_start` `tool_update` `tool_end` `model_changed` | observe; return ignored |
 | veto | `tool_call` | return `{ block = true, reason = "…" }` to stop the call; mutate `ev.arguments` to rewrite it |
 | transform | `user_input`, `tool_result` | return a replacement value, `nil` for unchanged, `{ handled = true }` to swallow |
-| collect | `before_agent_start` | return `{ system_prompt_append = "…", inject_message = "…" }` |
+| collect | `before_agent_start` | return `{ system_prompt_append = "…", inject_message = "…", hidden_tools = { "name", … } }` |
+
+`hidden_tools` excludes those tools from the schema sent to the model for
+the upcoming run only (recomputed fresh each run) — without unregistering
+them, so a veto still guards them regardless.
 
 **API surface**: `register_tool` `register_command` `register_shortcut`
 `register_flag`/`get_flag`/`set_flag` · `send_message` `abort` `set_model`
 `append_entry` · `notify` `set_status` `select` `confirm` `input` (dialogs
 suspend the calling coroutine until answered) · `exec` ·
-`cwd` `config` `session_id`.
+`cwd` `config` `session_id` `has_ui` (false in print mode — check this
+before calling `select`/`confirm`/`input`, which raise without a UI).
 
 Prompt templates: markdown files in `~/.config/lupus/commands/` or
 `.lupus/commands/` become `/name` commands; `$ARGUMENTS` is substituted.

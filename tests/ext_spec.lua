@@ -210,6 +210,30 @@ describe("ext loader + runtime integration", function()
 		_G.__proj_loaded = nil
 	end)
 
+	it("api.has_ui reflects whether a UI is attached", function()
+		fs.mkdirp(tmp .. "/cfg/lupus/extensions")
+		fs.write_file(
+			tmp .. "/cfg/lupus/extensions/hasui.lua",
+			[[
+      return function(api) _G.__has_ui_seen = api.has_ui end
+    ]]
+		)
+		local rt = make_runtime()
+		loop.run(function()
+			rt:load_extensions(nil)
+		end)
+		assert.is_false(_G.__has_ui_seen)
+		_G.__has_ui_seen = nil
+
+		local rt2 = make_runtime()
+		local ui = { notify = function() end }
+		loop.run(function()
+			rt2:load_extensions(ui)
+		end)
+		assert.is_true(_G.__has_ui_seen)
+		_G.__has_ui_seen = nil
+	end)
+
 	it("survives malformed extensions", function()
 		fs.mkdirp(tmp .. "/cfg/lupus/extensions")
 		fs.write_file(tmp .. "/cfg/lupus/extensions/broken.lua", "this is not lua ((")
@@ -312,6 +336,34 @@ describe("ext loader + runtime integration", function()
 		assert.matches("EXTENSION RULES", rt.agent.system_prompt)
 		-- The fake provider saw the appended system prompt.
 		assert.matches("EXTENSION RULES", rt.model.calls[1].context.system_prompt)
+	end)
+
+	it("before_agent_start hidden_tools filters the model's tool list", function()
+		fs.mkdirp(tmp .. "/cfg/lupus/extensions")
+		fs.write_file(
+			tmp .. "/cfg/lupus/extensions/hide.lua",
+			[[
+      return function(api)
+        api.on("before_agent_start", function()
+          return { hidden_tools = { "bash" } }
+        end)
+      end
+    ]]
+		)
+		local rt = make_runtime({
+			scripts = { { { text = "hi" }, stop = "stop" } },
+		})
+		loop.run(function()
+			rt:load_extensions(nil)
+			rt:send("hello")
+			rt.agent:wait_idle()
+		end)
+		local names = {}
+		for _, tool in ipairs(rt.model.calls[1].context.tools) do
+			names[tool.name] = true
+		end
+		assert.is_nil(names["bash"])
+		assert.is_true(names["read"])
 	end)
 
 	it("cli extension paths load without discovery", function()

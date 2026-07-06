@@ -1,0 +1,44 @@
+// Example permission-system policy. Copy to one of:
+//   ~/.config/lupus/permissions.jsonc    (global, trusted — a project can
+//                                         tighten this but never relax a deny)
+//   <project>/.lupus/permissions.jsonc   (project, untrusted)
+//
+// Categories: tools (built-ins: bash/read/write/edit/grep/find/ls, plus any
+// extension-registered tool), bash (command patterns), mcp (forward-
+// compatible: only relevant if an extension registers an "mcp" tool),
+// skills (forward-compatible: only relevant if an extension registers a
+// "skill" tool), special (external_directory, doom_loop).
+//
+// Wildcards: "*" = any run of characters, "?" = any one character. Within
+// one object, LAST MATCHING declaration wins — so put narrower overrides
+// after broader ones, as below ("git *" before the narrower "git status").
+{
+  "defaultPolicy": { "tools": "ask", "bash": "ask", "mcp": "ask", "skills": "ask", "special": "ask" },
+
+  "tools": {
+    "read": "allow",
+    // Resource-qualified rule: only reads under this path are auto-allowed.
+    "read:/home/alice/project/generated/*": "allow",
+    "write": "ask"
+  },
+
+  "bash": {
+    "*": "ask",
+    "git *": "ask",
+    "git status": "allow"
+  },
+
+  "mcp": {
+    "mcp_status": "allow"
+  },
+
+  "skills": {
+    "*": "ask"
+  },
+
+  "special": {
+    "doom_loop": "deny",
+    "external_directory": "ask",
+    "external_directory:/home/alice/shared/*": "allow"
+  }
+}

@@ -19,6 +19,11 @@
 -- execute raises on failure; the loop turns that into an error tool result
 -- the model sees. ctx = { cwd, tool_call_id, aborted = fn() -> bool,
 -- on_update = fn(partial_text) }.
+--
+-- `hidden_tools` (set by the runtime, see before_agent_start in
+-- session_runtime.lua) excludes tools from the schema sent to the model
+-- for the upcoming run without unregistering them — the veto still guards
+-- them regardless.
 
 local loop = require("lupus.loop")
 local ai = require("lupus.ai")
@@ -54,6 +59,7 @@ function Agent.new(opts)
 		run_task = nil,
 		tools = {},
 		tools_by_name = {},
+		hidden_tools = nil, -- set by the runtime from before_agent_start; nil = no filter
 	}, Agent)
 	self:set_tools(opts.tools or {})
 	return self
@@ -221,18 +227,26 @@ end
 -- ---------------------------------------------------------------------------
 -- LLM step
 
---- Tools in wire form (JSON schema), cached per tool table.
+--- Tools in wire form (JSON schema), cached per tool table. Tools named in
+--- `self.hidden_tools` (a set, set = { [name] = true, ... }) are left out of
+--- what the model sees this run — set by the runtime from a
+--- before_agent_start contribution's `hidden_tools` list. This hides tools
+--- from the model without unregistering them: a hidden tool can still be
+--- vetoed/blocked normally if something (e.g. an older transcript replay)
+--- still calls it.
 function Agent:wire_tools()
 	local out = {}
 	for _, tool in ipairs(self.tools) do
-		if not tool._wire_schema then
-			tool._wire_schema = schema.to_json_schema(tool.parameters)
+		if not (self.hidden_tools and self.hidden_tools[tool.name]) then
+			if not tool._wire_schema then
+				tool._wire_schema = schema.to_json_schema(tool.parameters)
+			end
+			out[#out + 1] = {
+				name = tool.name,
+				description = tool.description,
+				parameters = tool._wire_schema,
+			}
 		end
-		out[#out + 1] = {
-			name = tool.name,
-			description = tool.description,
-			parameters = tool._wire_schema,
-		}
 	end
 	return out
 end

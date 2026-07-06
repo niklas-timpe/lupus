@@ -8,6 +8,7 @@
 # Targets
 #   install (default)   — copy bin/lupus → $(BIN)/lupus
 #                         copy lupus/     → $(LIB)/lupus/
+#                         copy permission_system/ → $(LIB)/permission_system/
 #                         always overwrites the destination; asks for
 #                         confirmation first unless FORCE=1 is given
 #   uninstall           — remove everything installed
@@ -35,6 +36,7 @@ FORCE  ?=
 LUPSRC = bin/lupus
 LUPBIN = $(BIN)/lupus
 LUPMOD = $(LIB)/lupus
+PSMOD  = $(LIB)/permission_system
 
 .PHONY: all install uninstall reinstall
 
@@ -74,10 +76,15 @@ install:
 	cp -p lupus/tui/components/*.lua $(LUPMOD)/tui/components/
 	cp -p lupus/util/*.lua   $(LUPMOD)/util/
 	@echo "lupus modules installed → $(LUPMOD)/"
+	@mkdir -p $(PSMOD)
+	cp -p permission_system/*.lua $(PSMOD)/
+	cp -p permission_system/permissions.example.jsonc $(PSMOD)/
+	@echo "permission-system installed → $(PSMOD)/"
 
 uninstall:
 	rm -f $(LUPBIN)
 	rm -rf $(LUPMOD)
+	rm -rf $(PSMOD)
 	@echo "lupus removed from $(LIB)"
 
 reinstall: uninstall install

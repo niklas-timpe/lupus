@@ -26,6 +26,11 @@ function api_mod.build(host, source_path)
 	api.config = host.runtime.config.settings
 	api.session_id = host.runtime.session.id
 	api.source = source_path
+	-- False in print mode. Check this before api.select/confirm/input: those
+	-- raise when there's no UI, and a raised error inside a veto/collect
+	-- handler is caught by the hub and treated as "no verdict" — silently
+	-- fail-open instead of the fail-closed behavior most guards want.
+	api.has_ui = host.ui ~= nil
 
 	-- ---------------------------------------------------------------- events
 	function api.on(name, handler)
