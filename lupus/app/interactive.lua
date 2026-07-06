@@ -2,8 +2,10 @@
 -- fixed editor at the bottom. Assistant text renders as markdown, tool
 -- calls as compact cards, thinking as dim collapsed text.
 --
--- Keys: enter send · alt+enter newline · esc abort a run · ctrl+c twice
--- quit · pageup/pagedown or mouse wheel scroll the transcript.
+-- Keys: enter send · alt+enter newline · esc abort a run (or clear the
+-- editor when idle) · ctrl+c twice quit · pageup/pagedown scroll the
+-- transcript. The terminal's own mouse selection/copy works normally —
+-- lupus never enables mouse-report mode (see lupus/tui/init.lua).
 
 local loop = require("lupus.loop")
 local tui_mod = require("lupus.tui")
@@ -449,14 +451,26 @@ function Interactive:run()
 		self:replay_message(msg)
 	end
 
-	-- Global keys: esc aborts, ctrl+c twice quits.
+	-- Global keys: esc aborts (or clears the editor when idle), ctrl+c
+	-- twice quits. Escape is skipped here while a dialog/overlay is
+	-- focused (self.overlay set) so the dialog's own cancel handling gets
+	-- first crack at it instead of this listener abort()-ing the run out
+	-- from under it — dispatch() runs key_listeners before the focused
+	-- component, so without this guard an in-flight permission-approval
+	-- dialog (opened while the agent is running) could never be dismissed
+	-- with escape.
 	self.tui:add_key_listener(function(ev)
 		if ev.type ~= "key" then
 			return false
 		end
-		if ev.name == "escape" and self.runtime:is_running() then
-			self.runtime:abort()
-			return true
+		if ev.name == "escape" and not self.overlay then
+			if self.runtime:is_running() then
+				self.runtime:abort()
+				return true
+			elseif not self.editor:is_empty() then
+				self.editor:clear()
+				return true
+			end
 		end
 		if ev.name == "ctrl+c" then
 			local now = loop.now_ms()
